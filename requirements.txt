@@ -4,3 +4,4 @@ requests==2.32.5
 aiohttp==3.9.1
 anthropic>=0.50.0
 python-dotenv==1.0.0
+gunicorn==21.2.0
