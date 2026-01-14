@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Forum - Terminal Tools</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0f1419 0%, #1a2332 50%, #0f1419 100%);
+      color: #ffffff;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Stars Background */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 1; }
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(15, 20, 25, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Cards */
+    .card-3d {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .card-3d:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Input */
+    input, textarea {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: white;
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #a78bfa;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Post styles */
+    .post {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .post-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .post-content {
+      line-height: 1.6;
+      margin-bottom: 12px;
+      word-break: break-word;
+    }
+
+    .post-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .reply-button {
+      background: transparent;
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      color: #a78bfa;
+      padding: 6px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .reply-button:hover {
+      background: rgba(167, 139, 250, 0.1);
+      border-color: #a78bfa;
+    }
+
+    .wallet-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .censored {
+      background: #ef4444;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: help;
+    }
+
+    .reply-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .reply-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .reply-form {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .reply-form.active {
+      display: block;
+    }
+
+    .reply-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 8px;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .reply-input:focus {
+      outline: none;
+      border-color: #a78bfa;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .reply-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .cancel-button {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.6);
+      padding: 6px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .cancel-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+    }
+
+    .submit-reply-button {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      border: none;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .submit-reply-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <!-- Stars -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <div style="max-width: 1400px; margin: 0 auto; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+      <a href="/" style="font-size: 24px; font-weight: 900; text-decoration: none; color: white;">Terminal Tools</a>
+      <div style="display: flex; gap: 24px; align-items: center;">
+        <a href="/tax-calculator" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;">Tax Calculator</a>
+        <a href="/wallet-analyzer" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;">Wallet Analyzer</a>
+        <a href="/forum" style="color: #a78bfa; text-decoration: none; font-weight: 600;">Forum</a>
+        <button id="connectWalletBtn" class="btn-primary">Connect Wallet</button>
+      </div>
+    </div>
+  </nav>
+
+  <main style="padding: 120px 24px 80px; max-width: 900px; margin: 0 auto; position: relative; z-index: 1;">
+    <!-- Hero -->
+    <div style="text-align: center; margin-bottom: 48px;">
+      <h1 style="font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 16px; background: linear-gradient(135deg, #ffffff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+        Community Forum
+      </h1>
+      <p style="font-size: 18px; color: rgba(255, 255, 255, 0.6);">
+        Connect your wallet to join the conversation
+      </p>
+    </div>
+
+    <!-- Wallet Status -->
+    <div id="walletStatus" class="card-3d" style="margin-bottom: 32px; display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 14px; color: rgba(255, 255, 255, 0.6); margin-bottom: 4px;">Connected as</div>
+          <div style="font-weight: 700; font-size: 16px;" id="connectedWallet"></div>
+        </div>
+        <button id="disconnectBtn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 8px 16px; border-radius: 999px; cursor: pointer;">
+          Disconnect
+        </button>
+      </div>
+    </div>
+
+    <!-- New Post Form -->
+    <div id="newPostForm" class="card-3d hidden" style="margin-bottom: 32px;">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Create New Post</h2>
+      <form id="postForm">
+        <div style="margin-bottom: 16px;">
+          <input type="text" id="postTitle" placeholder="Post title..." required maxlength="200" />
+        </div>
+        <div style="margin-bottom: 16px;">
+          <textarea id="postContent" placeholder="What's on your mind?" required maxlength="1000"></textarea>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);" id="charCount">0 / 1000</div>
+          <button type="submit" class="btn-primary">Post</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Posts List -->
+    <div id="postsList">
+      <!-- Posts will be dynamically inserted here -->
+    </div>
+
+    <!-- No Posts Message -->
+    <div id="noPosts" class="card-3d" style="text-align: center; padding: 48px;">
+      <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+      <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No posts yet</div>
+      <div style="color: rgba(255, 255, 255, 0.6);">Be the first to start a conversation!</div>
+    </div>
+  </main>
+
+  <script>
+    // Create stars
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 100; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.width = Math.random() * 3 + 'px';
+      star.style.height = star.style.width;
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = Math.random() * 3 + 's';
+      starsContainer.appendChild(star);
+    }
+
+    // Blacklist words (case-insensitive)
+    const BLACKLIST = ['rug', 'scam', 'rugpull', 'scammer', 'fraud', 'ponzi', 'steal', 'hack'];
+
+    // State
+    let connectedWallet = null;
+    let posts = [];
+
+    // Elements
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const walletStatus = document.getElementById('walletStatus');
+    const connectedWalletEl = document.getElementById('connectedWallet');
+    const newPostForm = document.getElementById('newPostForm');
+    const postForm = document.getElementById('postForm');
+    const postTitle = document.getElementById('postTitle');
+    const postContent = document.getElementById('postContent');
+    const charCount = document.getElementById('charCount');
+    const postsList = document.getElementById('postsList');
+    const noPosts = document.getElementById('noPosts');
+
+    // Connect Wallet (simulated - in production use Phantom/Solflare)
+    connectWalletBtn.addEventListener('click', async () => {
+      // Check if Phantom is installed
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const resp = await window.solana.connect();
+          connectedWallet = resp.publicKey.toString();
+          updateWalletUI();
+        } catch (err) {
+          alert('Failed to connect wallet. Please try again.');
+        }
+      } else {
+        // Simulate wallet connection for demo
+        const mockWallet = 'Demo' + Math.random().toString(36).substring(2, 10);
+        connectedWallet = mockWallet;
+        updateWalletUI();
+        alert('⚠️ Phantom wallet not detected. Using demo mode.\n\nInstall Phantom wallet extension for real wallet authentication.');
+      }
+    });
+
+    disconnectBtn.addEventListener('click', () => {
+      if (window.solana && window.solana.isPhantom) {
+        window.solana.disconnect();
+      }
+      connectedWallet = null;
+      updateWalletUI();
+    });
+
+    function updateWalletUI() {
+      if (connectedWallet) {
+        connectWalletBtn.textContent = 'Connected';
+        connectWalletBtn.disabled = true;
+        walletStatus.classList.remove('hidden');
+        newPostForm.classList.remove('hidden');
+        connectedWalletEl.textContent = truncateWallet(connectedWallet);
+      } else {
+        connectWalletBtn.textContent = 'Connect Wallet';
+        connectWalletBtn.disabled = false;
+        walletStatus.classList.add('hidden');
+        newPostForm.classList.add('hidden');
+      }
+    }
+
+    function truncateWallet(wallet) {
+      if (wallet.length > 20) {
+        return wallet.substring(0, 8) + '...' + wallet.substring(wallet.length - 6);
+      }
+      return wallet;
+    }
+
+    // Character counter
+    postContent.addEventListener('input', () => {
+      charCount.textContent = `${postContent.value.length} / 1000`;
+    });
+
+    // Censor blacklisted words
+    function censorText(text) {
+      let censored = text;
+      let hadBlacklistedWords = false;
+
+      BLACKLIST.forEach(word => {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        if (regex.test(censored)) {
+          hadBlacklistedWords = true;
+          censored = censored.replace(regex, `<span class="censored" title="Blacklisted word">[censored]</span>`);
+        }
+      });
+
+      return { censored, hadBlacklistedWords };
+    }
+
+    // Create new post
+    postForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!connectedWallet) {
+        alert('Please connect your wallet first');
+        return;
+      }
+
+      const title = postTitle.value.trim();
+      const content = postContent.value.trim();
+
+      if (!title || !content) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      const { censored: censoredTitle, hadBlacklistedWords: titleCensored } = censorText(title);
+      const { censored: censoredContent, hadBlacklistedWords: contentCensored } = censorText(content);
+
+      if (titleCensored || contentCensored) {
+        const proceed = confirm('⚠️ Your post contains blacklisted words that will be censored. Continue?');
+        if (!proceed) return;
+      }
+
+      try {
+        const response = await fetch('/api/forum/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: censoredTitle,
+            content: censoredContent,
+            author: connectedWallet
+          })
+        });
+
+        if (!response.ok) throw new Error('Failed to create post');
+
+        postTitle.value = '';
+        postContent.value = '';
+        charCount.textContent = '0 / 1000';
+
+        await loadPosts();
+      } catch (error) {
+        console.error('Error creating post:', error);
+        alert('Failed to create post. Please try again.');
+      }
+    });
+
+    // Render posts
+    function renderPosts() {
+      if (posts.length === 0) {
+        postsList.innerHTML = '';
+        noPosts.classList.remove('hidden');
+        return;
+      }
+
+      noPosts.classList.add('hidden');
+
+      postsList.innerHTML = posts.map(post => `
+        <div class="post" data-post-id="${post.id}">
+          <div class="post-author">
+            <div class="post-avatar">${post.author.substring(0, 2).toUpperCase()}</div>
+            <div>
+              <div style="font-weight: 600;">${truncateWallet(post.author)}</div>
+              <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">${formatTimestamp(post.timestamp)}</div>
+            </div>
+            ${post.author === connectedWallet ? '<span class="wallet-badge">You</span>' : ''}
+          </div>
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">${post.title}</h3>
+          <div class="post-content">${post.content}</div>
+          <div class="post-meta">
+            <span>💬 ${post.replies.length} ${post.replies.length === 1 ? 'reply' : 'replies'}</span>
+            <button class="reply-button" onclick="toggleReplyForm(${post.id})">Reply</button>
+          </div>
+
+          ${post.replies.length > 0 ? `
+            <div class="reply-section">
+              ${post.replies.map(reply => `
+                <div class="reply-item">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <div class="post-avatar" style="width: 28px; height: 28px; font-size: 11px;">${reply.author.substring(0, 2).toUpperCase()}</div>
+                    <div style="font-weight: 600; font-size: 13px;">${truncateWallet(reply.author)}</div>
+                    ${reply.author === connectedWallet ? '<span class="wallet-badge" style="font-size: 10px; padding: 2px 8px;">You</span>' : ''}
+                    <div style="font-size: 11px; color: rgba(255, 255, 255, 0.4); margin-left: auto;">${formatTimestamp(reply.timestamp)}</div>
+                  </div>
+                  <div style="font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.9); word-break: break-word;">${reply.content}</div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <div class="reply-form" id="reply-form-${post.id}">
+            <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Write your reply..." maxlength="500"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.4);" id="reply-count-${post.id}">0 / 500</div>
+              <div class="reply-actions">
+                <button class="cancel-button" onclick="toggleReplyForm(${post.id})">Cancel</button>
+                <button class="submit-reply-button" onclick="submitReply(${post.id})">Post Reply</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add character counters for reply inputs
+      posts.forEach(post => {
+        const input = document.getElementById(`reply-input-${post.id}`);
+        const counter = document.getElementById(`reply-count-${post.id}`);
+        if (input && counter) {
+          input.addEventListener('input', () => {
+            counter.textContent = `${input.value.length} / 500`;
+          });
+        }
+      });
+    }
+
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000); // seconds
+
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+      return date.toLocaleDateString();
+    }
+
+    // Toggle reply form
+    function toggleReplyForm(postId) {
+      if (!connectedWallet) {
+        alert('Please connect your wallet to reply');
+        return;
+      }
+
+      const form = document.getElementById(`reply-form-${postId}`);
+      const input = document.getElementById(`reply-input-${postId}`);
+
+      if (form.classList.contains('active')) {
+        form.classList.remove('active');
+        input.value = '';
+      } else {
+        // Close all other reply forms
+        document.querySelectorAll('.reply-form').forEach(f => f.classList.remove('active'));
+        form.classList.add('active');
+        input.focus();
+      }
+    }
+
+    // Submit reply
+    async function submitReply(postId) {
+      if (!connectedWallet) {
+        alert('Please connect your wallet to reply');
+        return;
+      }
+
+      const input = document.getElementById(`reply-input-${postId}`);
+      const content = input.value.trim();
+
+      if (!content) {
+        alert('Please write a reply');
+        return;
+      }
+
+      const { censored: censoredContent, hadBlacklistedWords } = censorText(content);
+
+      if (hadBlacklistedWords) {
+        const proceed = confirm('⚠️ Your reply contains blacklisted words that will be censored. Continue?');
+        if (!proceed) return;
+      }
+
+      try {
+        const response = await fetch(`/api/forum/posts/${postId}/replies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: censoredContent,
+            author: connectedWallet
+          })
+        });
+
+        if (!response.ok) throw new Error('Failed to create reply');
+
+        await loadPosts();
+      } catch (error) {
+        console.error('Error creating reply:', error);
+        alert('Failed to create reply. Please try again.');
+      }
+    }
+
+    // Load posts from API
+    async function loadPosts() {
+      try {
+        const response = await fetch('/api/forum/posts');
+        const data = await response.json();
+        posts = data.posts || [];
+        renderPosts();
+      } catch (error) {
+        console.error('Error loading posts:', error);
+      }
+    }
+
+    // Initial load
+    loadPosts();
+    updateWalletUI();
+  </script>
+</body>
+</html>

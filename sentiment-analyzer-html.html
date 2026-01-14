@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Sentiment Analyzer - Terminal Tools</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0f1419 0%, #1a2332 50%, #0f1419 100%);
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Stars Background */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 1; }
+    }
+
+    /* Smooth transitions */
+    * {
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    a, button {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(15, 20, 25, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Cards */
+    .card-3d {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 32px;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .card-3d::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(135deg, #a78bfa, #ec4899, #8b5cf6);
+      border-radius: 24px;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.35s ease;
+    }
+
+    .card-3d:hover {
+      transform: translateY(-6px);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .card-3d:hover::before {
+      opacity: 0.28;
+      filter: blur(18px);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      color: white;
+      padding: 16px 32px;
+      border-radius: 999px;
+      font-weight: 900;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(139, 92, 246, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 55px rgba(139, 92, 246, 0.45);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Input Fields */
+    input, select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: white;
+      width: 100%;
+      font-size: 15px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #a78bfa;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Loading Animation */
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Token Card */
+    .token-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.25s ease;
+    }
+
+    .token-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(4px);
+    }
+
+    /* Metric Card */
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .metric-value {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 900;
+    }
+
+    /* Verdict Badge */
+    .verdict-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid;
+    }
+
+    .verdict-perfect {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .verdict-late {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .verdict-neutral {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    /* Insight Card */
+    .insight-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .insight-actionable {
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      color: rgba(167, 139, 250, 0.9);
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Stars Background -->
+  <div class="stars" id="stars"></div>
+
+  <div style="position: relative; z-index: 1;">
+    <!-- Navigation -->
+    <nav>
+      <div style="max-width: 1400px; margin: 0 auto; padding: 20px 48px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <a href="/" style="color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M10 12L6 8L10 4" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            Back to Apps
+          </a>
+
+          <div style="font-weight: 900; font-size: 18px; letter-spacing: -0.5px;">
+            SOCIAL SENTIMENT ANALYZER
+          </div>
+
+          <div style="width: 100px;"></div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main style="padding: 120px 24px 80px; max-width: 1400px; margin: 0 auto;">
+      <!-- Input Section -->
+      <section id="inputSection">
+        <div class="card-3d" style="max-width: 700px; margin: 0 auto;">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+            <div style="padding: 16px; background: rgba(167, 139, 250, 0.1); border-radius: 16px; border: 1px solid rgba(167, 139, 250, 0.2);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <div>
+              <h2 style="font-size: 32px; font-weight: 900; margin-bottom: 4px; letter-spacing: -1px;">
+                Analyze Social Sentiment
+              </h2>
+              <p style="color: rgba(255, 255, 255, 0.6);">
+                Discover optimal entry timing based on Twitter hype cycles
+              </p>
+            </div>
+          </div>
+
+          <form id="analyzeForm" style="display: flex; flex-direction: column; gap: 24px;">
+            <div>
+              <label style="display: block; margin-bottom: 8px; font-weight: 900; font-size: 13px; color: rgba(255, 255, 255, 0.7);">
+                Wallet Address
+              </label>
+              <input type="text" id="walletAddress" placeholder="Enter Solana wallet address..." required />
+            </div>
+
+            <button type="submit" class="btn-primary" id="analyzeBtn" style="width: 100%; margin-top: 8px;">
+              Analyze Sentiment
+            </button>
+          </form>
+
+          <!-- Features Preview -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 32px; padding-top: 32px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+            <div style="display: flex; align-items: start; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
+              </svg>
+              <div>
+                <div style="font-weight: 700; font-size: 14px;">Twitter Tracking</div>
+                <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">Real-time mention analysis</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: start; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+              <div>
+                <div style="font-weight: 700; font-size: 14px;">Entry Timing</div>
+                <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">Days before/after peak</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: start; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              <div>
+                <div style="font-weight: 700; font-size: 14px;">AI Insights</div>
+                <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">Pattern recognition</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: start; gap: 12px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <div>
+                <div style="font-weight: 700; font-size: 14px;">Success Patterns</div>
+                <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">Correlation analysis</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Loading Section -->
+      <section id="loadingSection" class="hidden">
+        <div class="card-3d" style="max-width: 700px; margin: 0 auto; text-align: center; padding: 64px 32px;">
+          <div class="loading-spinner" style="width: 64px; height: 64px; border: 4px solid rgba(167, 139, 250, 0.2); border-top-color: #a78bfa; border-radius: 50%; margin: 0 auto 24px;"></div>
+          <p style="font-size: 18px; font-weight: 900; margin-bottom: 8px;" id="loadingText">Analyzing sentiment...</p>
+          <p style="color: rgba(255, 255, 255, 0.5); font-size: 14px;">Correlating Twitter activity with trading patterns</p>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultsSection" class="hidden" style="display: flex; flex-direction: column; gap: 32px;">
+        <!-- Summary Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="metric-card">
+            <div class="metric-label">Sentiment Score</div>
+            <div class="metric-value" id="sentimentScore">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);" id="sentimentLabel">—</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Underhyped Gems</div>
+            <div class="metric-value" style="color: #10b981;" id="undervaluedCount">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);">Low noise winners</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Overhyped</div>
+            <div class="metric-value" style="color: #ef4444;" id="overvaluedCount">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);">Peak FOMO entries</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Optimal Entries</div>
+            <div class="metric-value" style="color: #a78bfa;" id="optimalCount">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);">Pre-momentum</div>
+          </div>
+        </div>
+
+        <!-- Key Insights -->
+        <div class="card-3d">
+          <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            AI-Powered Insights
+          </h3>
+          <div id="insightsList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;"></div>
+        </div>
+
+        <!-- Token Analysis -->
+        <div class="card-3d">
+          <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+              <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
+            </svg>
+            Token Sentiment Analysis
+          </h3>
+          <div id="tokensList" style="display: flex; flex-direction: column; gap: 16px;"></div>
+        </div>
+
+        <!-- Pattern Analysis -->
+        <div class="card-3d">
+          <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px;">Your Success Patterns</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 24px;">
+              <div style="color: #10b981; font-weight: 900; margin-bottom: 16px; font-size: 16px;">📈 Best Performers</div>
+              <div id="bestPattern" style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;"></div>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 24px;">
+              <div style="color: #ef4444; font-weight: 900; margin-bottom: 16px; font-size: 16px;">📉 Worst Performers</div>
+              <div id="worstPattern" style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <button onclick="resetForm()" class="btn-primary" style="max-width: 400px; margin: 0 auto;">
+          Analyze Another Wallet
+        </button>
+      </section>
+
+      <!-- Error Section -->
+      <section id="errorSection" class="hidden">
+        <div class="card-3d" style="max-width: 700px; margin: 0 auto; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+          <h3 style="font-size: 24px; font-weight: 900; margin-bottom: 12px; color: #ef4444;">Error</h3>
+          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 24px;" id="errorText"></p>
+          <button onclick="resetForm()" class="btn-primary">Try Again</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer style="padding: 40px 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
+      <p style="color: rgba(255, 255, 255, 0.4); font-size: 13px;">
+        ⚠️ For informational purposes only. Not financial advice.
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // Create stars
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 110; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.width = (Math.random() * 3 + 1) + 'px';
+      star.style.height = star.style.width;
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = Math.random() * 3 + 's';
+      starsContainer.appendChild(star);
+    }
+
+    // Form submission
+    document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const walletAddress = document.getElementById('walletAddress').value.trim();
+
+      if (!walletAddress || walletAddress.length < 32) {
+        showError('Please enter a valid Solana wallet address');
+        return;
+      }
+
+      // Hide input, show loading
+      document.getElementById('inputSection').classList.add('hidden');
+      document.getElementById('loadingSection').classList.remove('hidden');
+
+      try {
+        const response = await fetch('/api/analyze-sentiment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to analyze sentiment');
+        }
+
+        const data = await response.json();
+        displayResults(data);
+
+      } catch (error) {
+        console.error('Error:', error);
+        showError(error.message);
+      } finally {
+        document.getElementById('loadingSection').classList.add('hidden');
+      }
+    });
+
+    function displayResults(data) {
+      // Update summary cards
+      document.getElementById('sentimentScore').textContent = data.summary.avgSentimentScore;
+      document.getElementById('sentimentScore').style.color = getSentimentColor(data.summary.avgSentimentScore);
+      document.getElementById('sentimentLabel').textContent = getSentimentLabel(data.summary.avgSentimentScore);
+      
+      document.getElementById('undervaluedCount').textContent = data.summary.undervaluedTokens;
+      document.getElementById('overvaluedCount').textContent = data.summary.overvaluedTokens;
+      document.getElementById('optimalCount').textContent = data.summary.optimalEntries;
+
+      // Display insights
+      const insightsList = document.getElementById('insightsList');
+      insightsList.innerHTML = data.insights.map(insight => `
+        <div class="insight-card">
+          <div style="display: flex; align-items: start; gap: 12px;">
+            <div style="font-size: 24px;">${insight.icon}</div>
+            <div style="flex: 1;">
+              <h4 style="font-weight: 900; font-size: 14px; margin-bottom: 8px;">${insight.title}</h4>
+              <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px;">${insight.description}</p>
+              <div class="insight-actionable">
+                💡 ${insight.actionable}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Display tokens
+      const tokensList = document.getElementById('tokensList');
+      tokensList.innerHTML = data.tokens.map(token => `
+        <div class="token-card">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 48px; height: 48px; background: rgba(167, 139, 250, 0.2); border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 900;">
+                ${token.symbol.substring(0, 2)}
+              </div>
+              <div>
+                <div style="font-weight: 900; font-size: 18px;">${token.symbol}</div>
+                <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">${token.name}</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 900; font-size: 20px; color: ${token.position.pnl >= 0 ? '#10b981' : '#ef4444'};">
+                ${token.position.pnl >= 0 ? '+' : ''}${token.position.pnlPercent.toFixed(1)}%
+              </div>
+              <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">
+                $${token.position.valueUSD.toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <span class="verdict-badge ${getVerdictClass(token.analysis.verdict)}">
+              ${getVerdictLabel(token.analysis.verdict)}
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+            <div>
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px;">Sentiment</div>
+              <div style="font-weight: 900; font-size: 16px; color: ${getSentimentColor(token.sentiment.score)};">
+                ${token.sentiment.score}/100
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px;">Mentions (24h)</div>
+              <div style="font-weight: 900; font-size: 16px;">
+                ${token.sentiment.mentions24h.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px;">Peak</div>
+              <div style="font-weight: 900; font-size: 16px;">
+                ${token.sentiment.peakMentions?.toLocaleString() || 'N/A'}
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px;">Entry Timing</div>
+              <div style="font-weight: 900; font-size: 16px; color: ${token.sentiment.daysBeforeYouEntered !== null && token.sentiment.daysBeforeYouEntered > 0 ? '#10b981' : token.sentiment.daysBeforeYouEntered !== null ? '#ef4444' : 'rgba(255, 255, 255, 0.5)'};">
+                ${token.sentiment.daysBeforeYouEntered !== null 
+                  ? `${token.sentiment.daysBeforeYouEntered > 0 ? '+' : ''}${token.sentiment.daysBeforeYouEntered}d`
+                  : 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          <div style="background: rgba(0, 0, 0, 0.2); border-radius: 12px; padding: 16px;">
+            <div style="font-size: 13px; color: rgba(255, 255, 255, 0.8); margin-bottom: 8px;">
+              <strong>AI Analysis:</strong> ${token.analysis.recommendation}
+            </div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px;">
+              📊 ${token.analysis.historicalPattern}
+            </div>
+            <div style="font-size: 11px; color: rgba(255, 255, 255, 0.4); margin-top: 8px;">
+              Confidence: ${token.analysis.confidence}%
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Display patterns
+      const bestPattern = document.getElementById('bestPattern');
+      bestPattern.innerHTML = `
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: rgba(255, 255, 255, 0.6);">Avg mentions at entry:</span>
+          <span style="font-weight: 900; color: white;">${data.patterns.bestPerformers.avgMentionsAtEntry.toLocaleString()}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: rgba(255, 255, 255, 0.6);">Avg days before peak:</span>
+          <span style="font-weight: 900; color: #10b981;">+${data.patterns.bestPerformers.avgDaysBeforePeak}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: rgba(255, 255, 255, 0.6);">Avg return:</span>
+          <span style="font-weight: 900; color: #10b981;">+${data.patterns.bestPerformers.avgReturn}%</span>
+        </div>
+      `;
+
+      const worstPattern = document.getElementById('worstPattern');
+      worstPattern.innerHTML = `
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: rgba(255, 255, 255, 0.6);">Avg mentions at entry:</span>
+          <span style="font-weight: 900; color: white;">${data.patterns.worstPerformers.avgMentionsAtEntry.toLocaleString()}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: rgba(255, 255, 255, 0.6);">Avg days before peak:</span>
+          <span style="font-weight: 900; color: #ef4444;">${data.patterns.worstPerformers.avgDaysBeforePeak}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: rgba(255, 255, 255, 0.6);">Avg return:</span>
+          <span style="font-weight: 900; color: #ef4444;">${data.patterns.worstPerformers.avgReturn}%</span>
+        </div>
+      `;
+
+      // Show results section
+      document.getElementById('resultsSection').classList.remove('hidden');
+    }
+
+    function getSentimentColor(score) {
+      if (score >= 70) return '#ef4444';
+      if (score >= 40) return '#fbbf24';
+      return '#10b981';
+    }
+
+    function getSentimentLabel(score) {
+      if (score >= 70) return 'Overhyped';
+      if (score >= 40) return 'Moderate';
+      return 'Underhyped';
+    }
+
+    function getVerdictClass(verdict) {
+      if (verdict === 'perfect-entry' || verdict === 'optimal-entry' || verdict === 'stealth-gem') {
+        return 'verdict-perfect';
+      }
+      if (verdict === 'entered-late' || verdict === 'fomo-entry') {
+        return 'verdict-late';
+      }
+      return 'verdict-neutral';
+    }
+
+    function getVerdictLabel(verdict) {
+      const labels = {
+        'perfect-entry': '🎯 Perfect Entry',
+        'optimal-entry': '✨ Optimal Entry',
+        'stealth-gem': '💎 Stealth Gem',
+        'entered-late': '⚠️ Late Entry',
+        'fomo-entry': '🚨 FOMO Entry',
+        'accumulation': '🔄 Accumulation'
+      };
+      return labels[verdict] || verdict;
+    }
+
+    function showError(message) {
+      document.getElementById('errorText').textContent = message;
+      document.getElementById('inputSection').classList.add('hidden');
+      document.getElementById('loadingSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('errorSection').classList.remove('hidden');
+    }
+
+    function resetForm() {
+      document.getElementById('walletAddress').value = '';
+      document.getElementById('inputSection').classList.remove('hidden');
+      document.getElementById('loadingSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('errorSection').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

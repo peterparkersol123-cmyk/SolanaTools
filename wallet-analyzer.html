@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wallet Analyzer - Terminal Tools</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #0f1419 0%, #1a2332 50%, #0f1419 100%);
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+    }
+
+    /* Stars Background */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 1; }
+    }
+
+    /* Smooth transitions */
+    * {
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    a, button {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(15, 20, 25, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Cards */
+    .card-3d {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 32px;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .card-3d::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(135deg, #a78bfa, #ec4899, #8b5cf6);
+      border-radius: 24px;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.35s ease;
+    }
+
+    .card-3d:hover {
+      transform: translateY(-6px);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .card-3d:hover::before {
+      opacity: 0.28;
+      filter: blur(18px);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      color: white;
+      padding: 16px 32px;
+      border-radius: 999px;
+      font-weight: 900;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(139, 92, 246, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 55px rgba(139, 92, 246, 0.45);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Badge */
+    .badge-pill {
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+    }
+
+    /* Input Fields */
+    input, select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: white;
+      width: 100%;
+      font-size: 15px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #a78bfa;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Time period buttons */
+    .time-period-btn {
+      padding: 12px 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 900;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .time-period-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+    }
+
+    .time-period-btn.active {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+    }
+
+    /* Loading Animation */
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* HKMI Progress Bar */
+    .progress-bar {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #a78bfa, #ec4899);
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, rgba(15, 20, 25, 0.95), rgba(26, 35, 50, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Metrics Card */
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .metric-value {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 900;
+    }
+
+    /* Performer Card */
+    .performer-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .performer-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(4px);
+    }
+
+    /* HKMI Live Updates (floating panel) */
+    .live-updates {
+      position: fixed;
+      top: 88px;
+      right: 18px;
+      width: 340px;
+      max-height: calc(100vh - 110px);
+      overflow: hidden;
+      z-index: 1200;
+      display: none;
+    }
+
+    .live-updates .content {
+      max-height: calc(100vh - 190px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 10px;
+      line-height: 1.25rem;
+    }
+
+    .msg time {
+      color: rgba(167, 139, 250, 0.9);
+      font-size: 11px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .msg.success { color: rgba(16, 185, 129, 0.95); }
+    .msg.error { color: rgba(239, 68, 68, 0.95); }
+  </style>
+</head>
+
+<body>
+  <!-- Stars Background -->
+  <div class="stars" id="stars"></div>
+
+  <div style="position: relative; z-index: 1;">
+    <!-- Navigation -->
+    <nav>
+      <div style="max-width: 1400px; margin: 0 auto; padding: 20px 48px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <a href="/" style="color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M10 12L6 8L10 4" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            Back to Apps
+          </a>
+
+          <div style="font-weight: 900; font-size: 18px; letter-spacing: -0.5px;">
+            WALLET ANALYZER
+          </div>
+
+          <div style="width: 100px;"></div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- HKMI Live Updates Panel -->
+    <div class="live-updates" id="progressFeed">
+      <div class="card-3d" style="padding: 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-weight:900;color:rgba(255,255,255,0.85)">Live Updates</div>
+          <button id="hideFeedBtn" style="background:transparent;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-weight:900;">✕</button>
+        </div>
+        <div class="content" id="progressFeedContent"></div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main style="padding: 120px 24px 80px; max-width: 1400px; margin: 0 auto;">
+      <!-- Input Section -->
+      <section id="inputSection">
+        <div class="card-3d" style="max-width: 700px; margin: 0 auto;">
+          <h2 style="font-size: 32px; font-weight: 900; margin-bottom: 12px; letter-spacing: -1px;">
+            Analyze Any Wallet
+          </h2>
+          <p style="color: rgba(255, 255, 255, 0.6); margin-bottom: 32px;">
+            Enter a Solana wallet address to see detailed trading analytics
+          </p>
+
+          <form id="analyzeForm" style="display: flex; flex-direction: column; gap: 24px;">
+            <div>
+              <label style="display: block; margin-bottom: 8px; font-weight: 900; font-size: 13px; color: rgba(255, 255, 255, 0.7);">
+                Wallet Address
+              </label>
+              <input type="text" id="walletAddress" placeholder="Enter Solana wallet address..." required />
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 8px; font-weight: 900; font-size: 13px; color: rgba(255, 255, 255, 0.7);">
+                Time Period
+              </label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="time-period-btn" data-period="1">1hr</button>
+                <button type="button" class="time-period-btn" data-period="4">4hr</button>
+                <button type="button" class="time-period-btn" data-period="12">12hr</button>
+                <button type="button" class="time-period-btn active" data-period="24">1d</button>
+              </div>
+              <input type="hidden" id="selectedPeriod" value="24" />
+            </div>
+
+            <button type="submit" class="btn-primary" id="analyzeBtn" style="width: 100%; margin-top: 8px;">
+              Analyze Wallet
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Loading Section -->
+      <section id="loadingSection" class="hidden">
+        <div class="card-3d" style="max-width: 700px; margin: 0 auto; text-align: center; padding: 64px 32px;">
+          <div class="loading-spinner" style="width: 64px; height: 64px; border: 4px solid rgba(167, 139, 250, 0.2); border-top-color: #a78bfa; border-radius: 50%; margin: 0 auto 24px;"></div>
+          <p style="font-size: 18px; font-weight: 900; margin-bottom: 8px;" id="loadingText">Analyzing wallet...</p>
+          <p style="color: rgba(255, 255, 255, 0.5); font-size: 14px; margin-bottom: 18px;" id="progressText">This may take a minute</p>
+
+          <div class="progress-bar" style="max-width: 420px; margin: 0 auto;">
+            <div class="progress-fill" id="progressBar"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultsSection" class="hidden" style="display: flex; flex-direction: column; gap: 32px;">
+        <!-- Wallet Info -->
+        <div class="card-3d">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div>
+                <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900;">Wallet</div>
+                <div style="font-size: 18px; font-weight: 900;" class="mono" id="walletDisplay">—</div>
+              </div>
+              <button onclick="showNewWalletModal()" style="padding: 10px 18px; background: rgba(167, 139, 250, 0.2); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 999px; color: white; font-weight: 900; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+                  <circle cx="7" cy="7" r="6" stroke-width="2" />
+                  <path d="M13 13L15 15" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Change
+              </button>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900;">Analyzed</div>
+              <div style="font-size: 18px; font-weight: 900;" id="dateDisplay">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="metric-card">
+            <div class="metric-label">Win Rate</div>
+            <div class="metric-value" id="winRate">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);" id="winRateDetail">—</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Total P/L</div>
+            <div class="metric-value" id="totalPnL">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);" id="pnlDetail">—</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Total Trades</div>
+            <div class="metric-value" style="color: #a78bfa;" id="totalTrades">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);" id="tradesDetail">—</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Avg Hold Time</div>
+            <div class="metric-value" style="color: #a78bfa;" id="avgHold">—</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);" id="avgHoldUnit">days</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+          <div class="card-3d">
+            <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px;">Trading Activity</h3>
+            <div style="height: 300px;">
+              <canvas id="activityChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card-3d">
+            <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px;">P/L Distribution</h3>
+            <div style="height: 300px;">
+              <canvas id="pnlChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+          <div class="card-3d">
+            <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px;">🏆 Top Performers</h3>
+            <div id="topPerformers" style="display: flex; flex-direction: column; gap: 12px;"></div>
+          </div>
+
+          <div class="card-3d">
+            <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px;">📉 Worst Performers</h3>
+            <div id="worstPerformers" style="display: flex; flex-direction: column; gap: 12px;"></div>
+          </div>
+        </div>
+
+        <!-- Current Holdings -->
+        <div class="card-3d">
+          <h3 style="font-size: 20px; font-weight: 900; margin-bottom: 24px;">💼 Current Holdings</h3>
+          <div id="currentHoldings" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+      </section>
+
+      <!-- Error Section -->
+      <section id="errorSection" class="hidden">
+        <div class="card-3d" style="max-width: 700px; margin: 0 auto; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
+          <h3 style="font-size: 24px; font-weight: 900; margin-bottom: 12px; color: #ef4444;">Error</h3>
+          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 24px;" id="errorText"></p>
+          <button onclick="resetToInput()" class="btn-primary">Try Again</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer style="padding: 40px 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
+      <p style="color: rgba(255, 255, 255, 0.4); font-size: 13px;">
+        ⚠️ For informational purposes only. Not financial advice.
+      </p>
+    </footer>
+  </div>
+
+  <!-- New Wallet Modal -->
+  <div id="newWalletModal" class="hidden modal-backdrop" style="position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;">
+    <div class="modal-content" style="max-width: 600px; width: 100%; padding: 40px;">
+      <h2 style="font-size: 28px; font-weight: 900; margin-bottom: 12px;">Analyze New Wallet</h2>
+      <p style="color: rgba(255, 255, 255, 0.6); margin-bottom: 32px;">Enter a Solana wallet address to analyze its trading history</p>
+
+      <form id="newWalletForm" style="display: flex; flex-direction: column; gap: 24px;">
+        <div>
+          <label style="display: block; margin-bottom: 8px; font-weight: 900; font-size: 13px;">Wallet Address</label>
+          <input type="text" id="newWalletAddress" placeholder="Enter wallet address..." autofocus />
+        </div>
+
+        <div>
+          <label style="display: block; margin-bottom: 8px; font-weight: 900; font-size: 13px;">Time Period</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="time-period-btn modal-period-btn" data-period="1">1hr</button>
+            <button type="button" class="time-period-btn modal-period-btn" data-period="4">4hr</button>
+            <button type="button" class="time-period-btn modal-period-btn" data-period="12">12hr</button>
+            <button type="button" class="time-period-btn modal-period-btn active" data-period="24">1d</button>
+          </div>
+          <input type="hidden" id="newSelectedPeriod" value="24" />
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 8px;">
+          <button type="button" onclick="hideNewWalletModal()" style="flex: 1; padding: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-weight: 900; cursor: pointer;">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary" style="flex: 1;">
+            Analyze
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Create stars
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 110; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.width = (Math.random() * 3 + 1) + 'px';
+      star.style.height = star.style.width;
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = Math.random() * 3 + 's';
+      starsContainer.appendChild(star);
+    }
+
+    // Charts state
+    let activityChart = null;
+    let pnlChart = null;
+    let currentWallet = null;
+
+    // HKMI Live Updates feed
+    const progressFeed = document.getElementById('progressFeed');
+    const progressFeedContent = document.getElementById('progressFeedContent');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    document.getElementById('hideFeedBtn').addEventListener('click', () => {
+      progressFeed.style.display = 'none';
+    });
+
+    function addProgressMessage(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `msg ${type === 'success' ? 'success' : type === 'error' ? 'error' : ''}`;
+      div.innerHTML = `<time>${new Date().toLocaleTimeString()}</time><div class="text">${message}</div>`;
+      progressFeedContent.appendChild(div);
+
+      // keep last 12
+      while (progressFeedContent.children.length > 12) {
+        progressFeedContent.removeChild(progressFeedContent.firstChild);
+      }
+      progressFeedContent.scrollTop = progressFeedContent.scrollHeight;
+    }
+
+    // Modal functions
+    function showNewWalletModal() {
+      document.getElementById('newWalletModal').classList.remove('hidden');
+      document.getElementById('newWalletAddress').focus();
+    }
+
+    function hideNewWalletModal() {
+      document.getElementById('newWalletModal').classList.add('hidden');
+      document.getElementById('newWalletAddress').value = '';
+    }
+
+    function resetToInput() {
+      document.getElementById('errorSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('loadingSection').classList.add('hidden');
+      document.getElementById('inputSection').classList.remove('hidden');
+
+      progressFeed.style.display = 'none';
+      progressFeedContent.innerHTML = '';
+      if (progressBar) progressBar.style.width = '0%';
+      if (progressText) progressText.textContent = 'This may take a minute';
+    }
+
+    // Time period button handlers
+    document.querySelectorAll('.time-period-btn:not(.modal-period-btn)').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.time-period-btn:not(.modal-period-btn)').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('selectedPeriod').value = this.dataset.period;
+      });
+    });
+
+    document.querySelectorAll('.modal-period-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.modal-period-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('newSelectedPeriod').value = this.dataset.period;
+      });
+    });
+
+    // Form submissions
+    document.getElementById('analyzeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const walletAddress = document.getElementById('walletAddress').value.trim();
+      const timePeriod = document.getElementById('selectedPeriod').value;
+
+      if (!walletAddress || walletAddress.length < 32) {
+        showError('Please enter a valid Solana wallet address');
+        return;
+      }
+
+      await analyzeWallet(walletAddress, parseInt(timePeriod, 10));
+    });
+
+    document.getElementById('newWalletForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const walletAddress = document.getElementById('newWalletAddress').value.trim();
+      const timePeriod = document.getElementById('newSelectedPeriod').value;
+
+      if (!walletAddress || walletAddress.length < 32) {
+        alert('Please enter a valid Solana wallet address');
+        return;
+      }
+
+      hideNewWalletModal();
+      await analyzeWallet(walletAddress, parseInt(timePeriod, 10));
+    });
+
+    // Main analyze function (API contract unchanged)
+    async function analyzeWallet(walletAddress, timePeriod) {
+      document.getElementById('inputSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('errorSection').classList.add('hidden');
+      document.getElementById('loadingSection').classList.remove('hidden');
+
+      // HKMI feed on
+      progressFeed.style.display = 'block';
+      progressFeedContent.innerHTML = '';
+      addProgressMessage(`Analyzing ${walletAddress.slice(0,4)}...${walletAddress.slice(-4)} (${timePeriod}h)`, 'info');
+
+      // progress bar reset + "soft" simulated progress
+      if (progressBar) progressBar.style.width = '12%';
+      if (progressText) progressText.textContent = 'Fetching transactions...';
+
+      let tick = null;
+      tick = setInterval(() => {
+        const current = parseFloat((progressBar?.style.width || '0').replace('%', '')) || 0;
+        if (current < 85 && progressBar) progressBar.style.width = (current + 3) + '%';
+      }, 420);
+
+      try {
+        const response = await fetch('/api/analyze-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress, timePeriod })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to analyze wallet');
+        }
+
+        addProgressMessage('Parsing swaps & computing P/L…', 'info');
+        if (progressText) progressText.textContent = 'Processing results...';
+
+        const data = await response.json();
+
+        if (progressBar) progressBar.style.width = '100%';
+        addProgressMessage('✅ Done', 'success');
+
+        currentWallet = walletAddress;
+        displayResults(data);
+
+      } catch (error) {
+        console.error('Error:', error);
+        addProgressMessage(error.message || 'Error', 'error');
+        showError(error.message);
+      } finally {
+        if (tick) clearInterval(tick);
+        document.getElementById('loadingSection').classList.add('hidden');
+      }
+    }
+
+    function displayResults(data) {
+      document.getElementById('resultsSection').classList.remove('hidden');
+
+      // Wallet info
+      document.getElementById('walletDisplay').textContent =
+        data.wallet.substring(0, 4) + '...' + data.wallet.substring(data.wallet.length - 4);
+      document.getElementById('dateDisplay').textContent = new Date().toISOString().split('T')[0];
+
+      // Key metrics
+      const winRate = data.stats.win_rate.toFixed(1);
+      document.getElementById('winRate').textContent = winRate + '%';
+      document.getElementById('winRate').style.color = parseFloat(winRate) >= 50 ? '#10b981' : '#ef4444';
+      document.getElementById('winRateDetail').textContent =
+        `${data.stats.winning_trades}W / ${data.stats.losing_trades}L`;
+
+      const totalPnL = data.stats.total_pnl;
+      document.getElementById('totalPnL').textContent =
+        '$' + totalPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('totalPnL').style.color = totalPnL >= 0 ? '#10b981' : '#ef4444';
+      document.getElementById('pnlDetail').textContent = `$${data.stats.avg_gain.toFixed(2)} avg`;
+
+      document.getElementById('totalTrades').textContent = data.stats.total_trades;
+      document.getElementById('tradesDetail').textContent = `${data.stats.tokens_traded} tokens`;
+      document.getElementById('avgHold').textContent = data.stats.avg_hold_time.toFixed(1);
+      document.getElementById('avgHoldUnit').textContent = data.stats.avg_hold_time_unit || 'days';
+
+      // Charts
+      createActivityChart(data.activity_timeline);
+      createPnLChart(data.pnl_distribution);
+
+      // Top performers / holdings
+      displayPerformers('topPerformers', data.top_performers);
+      displayPerformers('worstPerformers', data.worst_performers);
+      displayHoldings(data.current_holdings);
+    }
+
+    function createActivityChart(timeline) {
+      const ctx = document.getElementById('activityChart');
+      if (activityChart) activityChart.destroy();
+
+      activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timeline.map(t => t.date),
+          datasets: [{
+            label: 'Trades',
+            data: timeline.map(t => t.count),
+            borderColor: '#a78bfa',
+            backgroundColor: 'rgba(167, 139, 250, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            x: {
+              ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function createPnLChart(distribution) {
+      const ctx = document.getElementById('pnlChart');
+      if (pnlChart) pnlChart.destroy();
+
+      pnlChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: distribution.map(d => d.range),
+          datasets: [{
+            label: 'Trades',
+            data: distribution.map(d => d.count),
+            backgroundColor: distribution.map(d => d.range.includes('-') ? '#ef4444' : '#10b981'),
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            x: {
+              ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function displayPerformers(elementId, tokens) {
+      const container = document.getElementById(elementId);
+      if (!tokens || tokens.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 32px; color: rgba(255, 255, 255, 0.4);">No data</div>';
+        return;
+      }
+
+      container.innerHTML = tokens.slice(0, 5).map((token, index) => `
+        <div class="performer-card">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 18px; font-weight: 900; color: #a78bfa;">${index + 1}</div>
+            <div>
+              <div style="font-weight: 900;">${token.symbol}</div>
+              <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);">${token.trades} trades</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 900; font-size: 16px; color: ${token.pnl >= 0 ? '#10b981' : '#ef4444'};">
+              ${token.pnl >= 0 ? '+' : ''}$${token.pnl.toFixed(2)}
+            </div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.4);">${token.roi.toFixed(1)}%</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function displayHoldings(holdings) {
+      const container = document.getElementById('currentHoldings');
+      if (!holdings || holdings.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 32px; color: rgba(255, 255, 255, 0.4);">No current holdings</div>';
+        return;
+      }
+
+      container.innerHTML = holdings.slice(0, 10).map(holding => `
+        <div class="performer-card">
+          <div>
+            <div style="font-weight: 900; font-size: 16px;">${holding.symbol}</div>
+            <div style="font-size: 13px; color: rgba(255, 255, 255, 0.5);">${holding.name}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 900;">${holding.amount.toLocaleString()}</div>
+            <div style="font-size: 13px; color: rgba(255, 255, 255, 0.5);">$${holding.value.toFixed(2)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showError(message) {
+      document.getElementById('inputSection').classList.remove('hidden');
+      document.getElementById('errorSection').classList.remove('hidden');
+      document.getElementById('errorText').textContent = message;
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('newWalletModal').addEventListener('click', function(e) {
+      if (e.target === this) hideNewWalletModal();
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && !document.getElementById('newWalletModal').classList.contains('hidden')) {
+        hideNewWalletModal();
+      }
+    });
+  </script>
+</body>
+</html>

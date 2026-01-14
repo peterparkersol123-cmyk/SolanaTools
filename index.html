@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tax Calculator - Terminal Tools</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body {
+      background: linear-gradient(180deg, #0f1419 0%, #1a2332 50%, #0f1419 100%);
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    /* Stars Background */
+    .stars {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
+    @keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+    /* Navigation */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(15, 20, 25, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Cards */
+    .card-3d {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 32px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-3d::before {
+      content: '';
+      position: absolute;
+      top: -2px; left: -2px; right: -2px; bottom: -2px;
+      background: linear-gradient(135deg, #a78bfa, #ec4899, #8b5cf6);
+      border-radius: 24px;
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.35s ease;
+    }
+    .card-3d:hover {
+      transform: translateY(-6px);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .card-3d:hover::before { opacity: 0.28; filter: blur(18px); }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      color: white;
+      padding: 16px 32px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(139, 92, 246, 0.28);
+      transition: all 0.25s ease;
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 55px rgba(139, 92, 246, 0.45); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 10px 40px rgba(16, 185, 129, 0.25);
+    }
+    .btn-success:hover { box-shadow: 0 15px 55px rgba(16, 185, 129, 0.45); }
+
+    /* Inputs */
+    input, select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: white;
+      width: 100%;
+      font-size: 15px;
+      transition: all 0.2s ease;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #a78bfa;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* AI Chat Widget */
+    #aiChatWidget {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+    }
+
+    #aiChatToggle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      transition: all 0.3s ease;
+    }
+
+    #aiChatToggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+    }
+
+    #aiChatBox {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      width: 520px;
+      max-height: 650px;
+      background: rgba(15, 20, 25, 0.98);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #aiChatBox.open {
+      display: flex;
+    }
+
+    .chat-header {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(139, 92, 246, 0.15));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 450px;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: rgba(167, 139, 250, 0.3);
+      border-radius: 4px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+      background: rgba(167, 139, 250, 0.5);
+    }
+
+    .chat-message {
+      padding: 16px 18px;
+      border-radius: 16px;
+      max-width: 90%;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .chat-message.user {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      margin-left: auto;
+      color: white;
+    }
+
+    .chat-message.assistant {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-right: auto;
+      white-space: pre-wrap;
+    }
+
+    .chat-message.assistant h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 12px 0 8px 0;
+      color: #a78bfa;
+    }
+
+    .chat-message.assistant h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 10px 0 6px 0;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .chat-message.assistant strong {
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .chat-message.assistant ul, .chat-message.assistant ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .chat-message.assistant li {
+      margin: 4px 0;
+    }
+
+    .chat-message.assistant code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .chat-message.system {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      margin: 0 auto;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      text-align: center;
+    }
+
+    .chat-input-container {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      gap: 12px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #a78bfa;
+    }
+
+    .chat-send-btn {
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chat-send-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .chat-send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .suggestions-container {
+      padding: 12px 20px;
+      background: rgba(167, 139, 250, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: none;
+    }
+
+    .suggestion-chip {
+      display: inline-block;
+      background: rgba(167, 139, 250, 0.2);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      margin: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+      background: rgba(167, 139, 250, 0.3);
+      transform: translateY(-1px);
+    }
+    input::placeholder { color: rgba(255, 255, 255, 0.3); }
+    select option { background: #1a2332; color: white; }
+
+    /* Loading */
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loading-spinner { animation: spin 1s linear infinite; }
+
+    /* Progress Bar */
+    .progress-bar {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: linear-gradient(90deg, #a78bfa, #ec4899);
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    /* List cards */
+    .token-card, .event-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.25s ease;
+    }
+    .token-card:hover { background: rgba(255, 255, 255, 0.05); transform: translateX(4px); }
+    .event-card:hover { background: rgba(255, 255, 255, 0.05); }
+
+    /* Metric */
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .metric-value { font-size: 32px; font-weight: 900; letter-spacing: -1px; margin-top: 6px; }
+    .metric-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Live Updates (floating) */
+    .live-updates {
+      position: fixed;
+      top: 88px;
+      right: 18px;
+      width: 340px;
+      max-height: calc(100vh - 110px);
+      overflow: hidden;
+      z-index: 1200;
+      display: none;
+    }
+    .live-updates .content {
+      max-height: calc(100vh - 190px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .msg {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 10px;
+    }
+    .msg time {
+      color: rgba(167, 139, 250, 0.9);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .msg.success { color: rgba(16, 185, 129, 0.95); }
+    .msg.error { color: rgba(239, 68, 68, 0.95); }
+
+    /* Tiny utility */
+    .hidden { display: none !important; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+
+<body>
+  <div class="stars" id="stars"></div>
+
+  <div style="position: relative; z-index: 1;">
+    <nav>
+      <div style="max-width: 1400px; margin: 0 auto; padding: 20px 48px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <a href="/" style="color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+              <path d="M10 12L6 8L10 4" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Back to Apps
+          </a>
+          <div style="font-weight: 900; font-size: 18px; letter-spacing: -0.5px;">TAX CALCULATOR</div>
+          <div style="width: 100px;"></div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Live Updates -->
+    <div class="live-updates" id="progressFeed">
+      <div class="card-3d" style="padding: 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-weight:800;color:rgba(255,255,255,0.85)">Live Updates</div>
+          <button id="hideFeedBtn" style="background:transparent;border:none;color:rgba(255,255,255,0.5);cursor:pointer;">✕</button>
+        </div>
+        <div class="content" id="progressFeedContent"></div>
+      </div>
+    </div>
+
+    <main style="padding: 120px 24px 80px; max-width: 1400px; margin: 0 auto;">
+      <!-- Hero -->
+      <div style="text-align: center; margin-bottom: 64px;">
+        <h1 style="font-size: 56px; font-weight: 900; letter-spacing: -2px; margin-bottom: 16px; background: linear-gradient(135deg, #ffffff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+          Calculate Your Taxes
+        </h1>
+        <p style="font-size: 18px; color: rgba(255, 255, 255, 0.6);">
+          Professional tax calculations for Solana memecoin traders
+        </p>
+      </div>
+
+      <!-- Input -->
+      <div class="card-3d" style="max-width: 880px; margin: 0 auto 64px;">
+        <form id="taxForm" style="display: flex; flex-direction: column; gap: 24px;">
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: rgba(255, 255, 255, 0.7);">Wallet Address</label>
+            <input id="walletAddress" type="text" placeholder="Your Solana wallet address" required />
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div>
+              <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: rgba(255, 255, 255, 0.7);">Accounting Method</label>
+              <select id="accountingMethod">
+                <option value="FIFO">FIFO (First In, First Out)</option>
+                <option value="LIFO">LIFO (Last In, First Out)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: rgba(255, 255, 255, 0.7);">Transaction Limit</label>
+              <select id="maxTransactions">
+                <option value="100">100 Transactions</option>
+                <option value="500">500 Transactions</option>
+                <option value="1000" selected>1,000 Transactions</option>
+                <option value="2500">2,500 Transactions</option>
+                <option value="5000">5,000 Transactions</option>
+                <option value="10000">10,000 Transactions</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: rgba(255, 255, 255, 0.7);">Tax Region</label>
+            <select id="taxRegion">
+              <optgroup label="🇺🇸 United States">
+                <option value="us_federal">US Federal (37% / 20%)</option>
+                <option value="us_california">California (50.3% / 33.3%)</option>
+                <option value="us_new_york">New York (47.9% / 30.9%)</option>
+                <option value="us_texas">Texas (37% / 20% - No State Tax)</option>
+                <option value="us_florida">Florida (37% / 20% - No State Tax)</option>
+              </optgroup>
+              <optgroup label="🌍 International">
+                <option value="uk">🇬🇧 United Kingdom (20% + £6K exemption)</option>
+                <option value="india">🇮🇳 India (30% / 20%)</option>
+                <option value="germany">🇩🇪 Germany (45% / 0% - Tax-free &gt;1yr!)</option>
+                <option value="australia">🇦🇺 Australia (45% / 22.5% - 50% discount)</option>
+                <option value="canada">🇨🇦 Canada (26.75% - 50% inclusion)</option>
+              </optgroup>
+            </select>
+            <p style="font-size: 12px; color: rgba(255, 255, 255, 0.45); margin-top: 8px;" id="regionDescription">
+              Select your region to see tax rates and rules
+            </p>
+          </div>
+
+          <button id="calculateBtn" type="submit" class="btn-primary" style="width: 100%; margin-top: 8px;">
+            Calculate Taxes
+          </button>
+        </form>
+      </div>
+
+      <!-- Loading -->
+      <div id="loadingSection" class="hidden">
+        <div class="card-3d" style="max-width: 880px; margin: 0 auto; text-align: center; padding: 64px 32px;">
+          <div class="loading-spinner" style="width: 64px; height: 64px; border: 4px solid rgba(167, 139, 250, 0.2); border-top-color: #a78bfa; border-radius: 50%; margin: 0 auto 24px;"></div>
+          <p style="font-size: 18px; font-weight: 800; margin-bottom: 8px;" id="loadingText">Fetching transactions...</p>
+          <p style="color: rgba(255, 255, 255, 0.5); font-size: 14px; margin-bottom: 24px;" id="progressText">This may take a minute</p>
+          <div class="progress-bar" style="max-width: 420px; margin: 0 auto;">
+            <div class="progress-fill" id="progressBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="resultsSection" class="hidden" style="display: flex; flex-direction: column; gap: 32px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+          <div class="card-3d">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+              <h2 style="font-size: 20px; font-weight: 900;">Performance</h2>
+            </div>
+            <div style="height: 300px; position: relative;">
+              <canvas id="performanceChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card-3d">
+            <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 18px;">Tax Summary</h2>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div class="metric-card">
+                <div class="metric-label">Total Proceeds</div>
+                <div class="metric-value" style="color:#10b981;" id="totalProceeds">$0.00</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Total Cost Basis</div>
+                <div class="metric-value" style="color:#3b82f6;" id="totalCost">$0.00</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Net Gain/Loss</div>
+                <div class="metric-value" id="netGain">$0.00</div>
+              </div>
+            </div>
+            <div style="margin-top: 14px; text-align:center;">
+              <p style="font-size: 13px; color: rgba(255, 255, 255, 0.55);">
+                Taxable Sales: <span id="taxableSales" style="font-weight: 800;">0</span>
+              </p>
+              <p style="font-size: 12px; color: rgba(255, 255, 255, 0.45); margin-top: 8px;" id="taxRegionInfo"></p>
+            </div>
+          </div>
+
+          <div class="card-3d">
+            <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 18px;">Gains/Losses by Token</h2>
+            <div id="tokensList" style="display:flex;flex-direction:column;gap:12px;max-height:400px;overflow-y:auto;">
+              <p style="text-align:center;padding:32px;color:rgba(255,255,255,0.4);">Tokens will appear here...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-3d">
+          <h2 style="font-size: 24px; font-weight: 900; margin-bottom: 18px;">Recent Taxable Events</h2>
+          <div id="eventsLoading" class="hidden" style="text-align:center;padding:14px;color:rgba(255,255,255,0.45);">
+            Processing events... New events will appear below as they are calculated.
+          </div>
+          <div id="eventsList" style="display:flex;flex-direction:column;gap:14px;max-height:520px;overflow-y:auto;"></div>
+        </div>
+
+        <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+          <button id="downloadBtn" class="btn-primary btn-success" style="max-width:420px;">
+            Download Full Report (TXT)
+          </button>
+          <button id="downloadCsvBtn" class="btn-primary" style="max-width:420px; background: linear-gradient(135deg, #3b82f6, #2563eb);">
+            Export to CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="errorSection" class="hidden">
+        <div class="card-3d" style="max-width: 880px; margin: 0 auto; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.05);">
+          <h3 style="font-size: 24px; font-weight: 900; margin-bottom: 12px; color: #ef4444;">Error</h3>
+          <p style="color: rgba(255, 255, 255, 0.75);" id="errorText"></p>
+        </div>
+      </div>
+    </main>
+
+    <footer style="padding: 40px 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
+      <p style="color: rgba(255, 255, 255, 0.45); font-size: 13px;">
+        ⚠️ For informational purposes only. Consult a tax professional for advice.
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // --- Stars background ---
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 110; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.width = (Math.random() * 3 + 1) + 'px';
+      star.style.height = star.style.width;
+      star.style.left = (Math.random() * 100) + '%';
+      star.style.top = (Math.random() * 100) + '%';
+      star.style.animationDelay = (Math.random() * 3) + 's';
+      starsContainer.appendChild(star);
+    }
+
+    // --- Tax region descriptions ---
+    const regionDescriptions = {
+      us_federal: 'Federal tax rates only. Short-term gains taxed as ordinary income (up to 37%), long-term at capital gains rates (0-20%).',
+      us_california: 'Federal + California state tax (13.3%). Highest combined rate in US. Short-term: 50.3%, Long-term: 33.3%',
+      us_new_york: 'Federal + New York state tax (10.9%). Short-term: 47.9%, Long-term: 30.9%',
+      us_texas: 'Federal tax only - Texas has NO state income tax! Short-term: 37%, Long-term: 20%',
+      us_florida: 'Federal tax only - Florida has NO state income tax! Short-term: 37%, Long-term: 20%',
+      uk: 'Capital Gains Tax at 20% on profits above £6,000 annual exemption. No distinction between short/long-term.',
+      india: 'Short-term gains (≤1 year): 30% + cess. Long-term gains (>1 year): 20% with indexation benefit.',
+      germany: '🎉 Tax-free if held >1 year! Otherwise taxed as personal income (up to 45%).',
+      australia: '50% CGT discount if held >1 year. Short-term: 45%, Long-term: 22.5% (effectively half your marginal rate).',
+      canada: '50% of capital gains included in taxable income. Taxed at your marginal rate. Short & long-term treated the same.'
+    };
+
+    const regionNames = {
+      us_federal: '🇺🇸 United States (Federal)',
+      us_california: '🇺🇸 California, USA',
+      us_new_york: '🇺🇸 New York, USA',
+      us_texas: '🇺🇸 Texas, USA',
+      us_florida: '🇺🇸 Florida, USA',
+      uk: '🇬🇧 United Kingdom',
+      india: '🇮🇳 India',
+      germany: '🇩🇪 Germany',
+      australia: '🇦🇺 Australia',
+      canada: '🇨🇦 Canada'
+    };
+
+    document.getElementById('taxRegion').addEventListener('change', function() {
+      document.getElementById('regionDescription').textContent =
+        regionDescriptions[this.value] || 'Select your region to see tax rates and rules';
+    });
+
+    // --- State ---
+    let currentReportData = null;
+
+    let incrementalEvents = [];
+    let incrementalTokens = {}; // mint -> tokenData
+
+    let performanceChart = null;
+    let chartData = { labels: [], cumulativeGains: [] };
+    let cumulativeGain = 0;
+
+    let selectedTaxRegion = 'us_federal';
+
+    // --- Elements ---
+    const form = document.getElementById('taxForm');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const loadingSection = document.getElementById('loadingSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const errorSection = document.getElementById('errorSection');
+    const progressBar = document.getElementById('progressBar');
+    const loadingText = document.getElementById('loadingText');
+    const progressFeed = document.getElementById('progressFeed');
+    const progressFeedContent = document.getElementById('progressFeedContent');
+    const eventsList = document.getElementById('eventsList');
+    const eventsLoading = document.getElementById('eventsLoading');
+
+    document.getElementById('hideFeedBtn').addEventListener('click', () => {
+      progressFeed.style.display = 'none';
+    });
+
+    // --- Helpers (token naming) ---
+    function getTokenDisplayName(token) {
+      if (token.name && token.name.trim() && token.name !== token.symbol) return token.name;
+      if (token.symbol && token.symbol.trim()) return token.symbol;
+      if (token.mint) return token.mint.substring(0, 8) + '...';
+      return 'Unknown Token';
+    }
+    function getTokenSymbol(token) {
+      if (token.symbol && token.symbol.trim()) return token.symbol;
+      if (token.mint) return token.mint.substring(0, 6);
+      return '??';
+    }
+
+    // --- Chart ---
+    function initPerformanceChart() {
+      const ctx = document.getElementById('performanceChart');
+      if (!ctx) return;
+
+      performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'Cumulative Gain/Loss ($)',
+            data: chartData.cumulativeGains,
+            borderColor: '#a78bfa',
+            backgroundColor: 'rgba(167, 139, 250, 0.10)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              labels: { color: 'rgba(255,255,255,0.6)', font: { size: 12 } }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0,0,0,0.85)',
+              titleColor: 'rgba(167, 139, 250, 0.95)',
+              bodyColor: '#fff',
+              borderColor: 'rgba(167, 139, 250, 0.8)',
+              borderWidth: 1,
+              callbacks: {
+                label: (context) => {
+                  const v = context.parsed.y;
+                  const sign = v >= 0 ? '+' : '';
+                  return `${sign}$${v.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45, minRotation: 45 },
+              grid: { color: 'rgba(255,255,255,0.06)' }
+            },
+            y: {
+              ticks: {
+                color: 'rgba(255,255,255,0.5)',
+                callback: (value) => '$' + Number(value).toFixed(0)
+              },
+              grid: { color: 'rgba(255,255,255,0.06)' }
+            }
+          },
+          animation: { duration: 650 }
+        }
+      });
+    }
+
+    function updatePerformanceChart(event) {
+      if (!performanceChart) return;
+
+      cumulativeGain += (event.gain || 0);
+
+      const eventDate = new Date(event.date);
+      const now = new Date();
+      const hoursDiff = (now - eventDate) / (1000 * 60 * 60);
+
+      let label;
+      if (hoursDiff < 24) {
+        label = eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      } else {
+        label = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+
+      chartData.labels.push(label);
+      chartData.cumulativeGains.push(cumulativeGain);
+
+      if (chartData.labels.length > 50) {
+        chartData.labels.shift();
+        chartData.cumulativeGains.shift();
+      }
+
+      performanceChart.update('none');
+    }
+
+    // --- UI updates ---
+    function updateLoadingText(text) {
+      loadingText.textContent = text;
+    }
+
+    function showError(message) {
+      document.getElementById('errorText').textContent = message;
+      errorSection.classList.remove('hidden');
+    }
+
+    function addProgressMessage(message, type = 'info') {
+      // dedupe repetitive messages (like in your first version)
+      const isFetchMessage = message.includes('Fetched page') || message.includes('Fetched');
+      const isProcessed = message.includes('Processed') && message.includes('/');
+
+      const children = Array.from(progressFeedContent.children);
+      const last = children[children.length - 1];
+
+      if (last && (isFetchMessage || isProcessed)) {
+        const lastText = last.querySelector('.text')?.textContent || '';
+        const sameType = (isFetchMessage && (lastText.includes('Fetched page') || lastText.includes('Fetched'))) ||
+                         (isProcessed && lastText.includes('Processed') && lastText.includes('/'));
+        if (sameType) {
+          last.querySelector('time').textContent = new Date().toLocaleTimeString();
+          last.querySelector('.text').textContent = message;
+          return;
+        }
+      }
+
+      const div = document.createElement('div');
+      div.className = `msg ${type === 'success' ? 'success' : type === 'error' ? 'error' : ''}`;
+      div.innerHTML = `<time>${new Date().toLocaleTimeString()}</time><div class="text">${message}</div>`;
+      progressFeedContent.appendChild(div);
+
+      // keep last 10
+      while (progressFeedContent.children.length > 10) {
+        progressFeedContent.removeChild(progressFeedContent.firstChild);
+      }
+      progressFeedContent.scrollTop = progressFeedContent.scrollHeight;
+    }
+
+    function addEventToDisplay(event) {
+      const displayName = event.token_name || event.token || 'Unknown';
+
+      const div = document.createElement('div');
+      div.className = 'event-card';
+      const gain = Number(event.gain || 0);
+      const sign = gain >= 0 ? '+' : '';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+          <div>
+            <div style="font-weight:800;font-size:16px;">${displayName}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);">${event.date}</div>
+          </div>
+          <div style="font-weight:900;font-size:18px;color:${gain >= 0 ? '#10b981' : '#ef4444'};">
+            ${sign}$${gain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;color:rgba(255,255,255,0.55);">
+          <div>Amount: ${typeof event.amount === 'number' ? event.amount.toLocaleString('en-US', { maximumFractionDigits: 6 }) : event.amount}</div>
+          <div>Proceeds: $${Number(event.proceeds || 0).toFixed(2)}</div>
+          <div>Cost: $${Number(event.cost || 0).toFixed(2)}</div>
+        </div>
+      `;
+      eventsList.insertBefore(div, eventsList.firstChild);
+    }
+
+    function copyToClipboard(text, buttonEl) {
+      navigator.clipboard.writeText(text).then(() => {
+        const original = buttonEl.innerHTML;
+        buttonEl.innerHTML = '✓';
+        buttonEl.style.color = '#00ff00';
+        setTimeout(() => {
+          buttonEl.innerHTML = original;
+          buttonEl.style.color = 'rgba(167, 139, 250, 0.9)';
+        }, 1500);
+      }).catch(() => {});
+    }
+
+    function updateTokenInList(tokenData) {
+      incrementalTokens[tokenData.mint] = tokenData;
+
+      const tokensArray = Object.values(incrementalTokens)
+        .sort((a, b) => Math.abs((b.gain || 0)) - Math.abs((a.gain || 0)));
+
+      const tokensList = document.getElementById('tokensList');
+      if (tokensArray.length === 0) {
+        tokensList.innerHTML = `<p style="text-align:center;padding:32px;color:rgba(255,255,255,0.4);">No token data available</p>`;
+        return;
+      }
+
+      tokensList.innerHTML = tokensArray.map(t => {
+        const logoUrl = t.logoURI || '';
+        const hasLogo = !!logoUrl;
+        const displayName = getTokenDisplayName(t);
+        const symbol = getTokenSymbol(t);
+        const mint = t.mint || '';
+        const gain = Number(t.gain || 0);
+        const sign = gain >= 0 ? '+' : '';
+
+        const mintShort = mint ? `${mint.substring(0, 4)}...${mint.substring(mint.length - 4)}` : 'N/A';
+
+        return `
+          <div class="token-card" style="display:flex;justify-content:space-between;align-items:center;gap:14px;">
+            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+              <div style="width:42px;height:42px;flex-shrink:0;position:relative;">
+                ${hasLogo ? `
+                  <img src="${logoUrl}" alt="${displayName}"
+                       style="width:42px;height:42px;border-radius:999px;object-fit:cover;position:absolute;"
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                       loading="lazy" />
+                ` : ''}
+                <div style="width:42px;height:42px;border-radius:999px;background:rgba(167,139,250,0.18);display:${hasLogo ? 'none' : 'flex'};align-items:center;justify-content:center;font-weight:900;">
+                  ${symbol.substring(0,2).toUpperCase()}
+                </div>
+              </div>
+
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${displayName}</div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,0.45);min-width:0;">
+                  <span class="mono" title="${mint}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${mintShort}</span>
+                  ${mint ? `
+                    <button
+                      style="background:transparent;border:none;cursor:pointer;color:rgba(167,139,250,0.9);font-weight:900;"
+                      title="Copy contract address"
+                      onclick="copyToClipboard('${mint}', this)"
+                    >⧉</button>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div style="font-weight:900;font-size:16px;color:${gain >= 0 ? '#10b981' : '#ef4444'};">
+              ${sign}$${gain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updatePartialSummary(summary) {
+      document.getElementById('totalProceeds').textContent =
+        `$${Number(summary.total_proceeds || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('totalCost').textContent =
+        `$${Number(summary.total_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      const net = Number(summary.net_gain || 0);
+      const netEl = document.getElementById('netGain');
+      netEl.textContent = `$${net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      netEl.style.color = net >= 0 ? '#10b981' : '#ef4444';
+
+      document.getElementById('taxableSales').textContent = summary.taxable_sales ?? 0;
+
+      if (resultsSection.classList.contains('hidden')) {
+        resultsSection.classList.remove('hidden');
+        eventsLoading.classList.remove('hidden');
+
+        if (!performanceChart) initPerformanceChart();
+
+        document.getElementById('taxRegionInfo').textContent =
+          `📍 ${regionNames[selectedTaxRegion] || 'Unknown Region'}`;
+      }
+    }
+
+    function displayResults(report) {
+      const summary = report.summary || {};
+
+      document.getElementById('totalProceeds').textContent =
+        `$${Number(summary.total_proceeds || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('totalCost').textContent =
+        `$${Number(summary.total_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      const net = Number(summary.net_gain || 0);
+      const netEl = document.getElementById('netGain');
+      netEl.textContent = `$${net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      netEl.style.color = net >= 0 ? '#10b981' : '#ef4444';
+
+      document.getElementById('taxableSales').textContent = summary.taxable_sales ?? 0;
+      document.getElementById('taxRegionInfo').textContent = `📍 ${regionNames[selectedTaxRegion] || 'Unknown Region'}`;
+
+      if (!performanceChart) initPerformanceChart();
+
+      // if backend sends final lists, fill them (but do NOT break incremental flow)
+      if (Array.isArray(report.tokens)) {
+        report.tokens.forEach(t => { if (t && t.mint) incrementalTokens[t.mint] = t; });
+        updateTokenInList(Object.values(incrementalTokens)[0] || { mint: Object.keys(incrementalTokens)[0] });
+      }
+
+      if (Array.isArray(report.events) && eventsList.children.length === 0) {
+        // build chart chronologically for final set
+        const sorted = [...report.events].sort((a,b) => new Date(a.date) - new Date(b.date));
+        sorted.forEach(ev => updatePerformanceChart(ev));
+
+        // show newest-first in list
+        report.events.slice().reverse().forEach(addEventToDisplay);
+      }
+
+      eventsLoading.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+    }
+
+    // --- SSE stream handler ---
+    function handleStreamEvent(data) {
+      const type = data.type;
+
+      switch (type) {
+        case 'status':
+          updateLoadingText(data.message || 'Working...');
+          addProgressMessage(data.message || 'Working...', 'info');
+          break;
+
+        case 'fetch_progress': {
+          const msg = data.message || 'Fetching transactions...';
+          updateLoadingText(msg);
+          addProgressMessage(msg, 'info');
+          break;
+        }
+
+        case 'progress': {
+          const progressData = data.data || {};
+          const processed = progressData.processed || 0;
+          const total = progressData.total || 1;
+          const percent = Math.min(95, (processed / total) * 100);
+          progressBar.style.width = percent + '%';
+
+          updateLoadingText(data.message || `Processed ${processed}/${total}`);
+          addProgressMessage(data.message || `Processed ${processed}/${total}`, 'info');
+          break;
+        }
+
+        case 'event':
+          if (data.event) {
+            incrementalEvents.push(data.event);
+            addEventToDisplay(data.event);
+            if (!performanceChart) initPerformanceChart();
+            updatePerformanceChart(data.event);
+
+            if (data.partial_summary) updatePartialSummary(data.partial_summary);
+            eventsLoading.classList.add('hidden');
+          }
+          break;
+
+        case 'token_update':
+          if (data.token) updateTokenInList(data.token);
+          break;
+
+        case 'complete':
+          progressBar.style.width = '100%';
+          updateLoadingText('Complete!');
+          addProgressMessage('✅ Calculation complete!', 'success');
+
+          currentReportData = data.report || null;
+          if (currentReportData) displayResults(currentReportData);
+
+          setTimeout(() => {
+            loadingSection.classList.add('hidden');
+            calculateBtn.disabled = false;
+            // keep feed visible unless user closes it
+          }, 900);
+          break;
+
+        case 'error':
+          showError(data.message || 'An error occurred');
+          addProgressMessage(data.message || 'Error', 'error');
+          loadingSection.classList.add('hidden');
+          progressFeed.style.display = 'none';
+          calculateBtn.disabled = false;
+          break;
+      }
+    }
+
+    // --- Form submit ---
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const walletAddress = document.getElementById('walletAddress').value.trim();
+      const accountingMethod = document.getElementById('accountingMethod').value;
+      const maxTransactions = document.getElementById('maxTransactions').value;
+      const taxRegion = document.getElementById('taxRegion').value;
+
+      selectedTaxRegion = taxRegion;
+
+      if (!walletAddress || walletAddress.length < 32) {
+        showError('Please enter a valid Solana wallet address');
+        return;
+      }
+
+      // Reset UI/state (matches your original behaviour)
+      resultsSection.classList.add('hidden');
+      errorSection.classList.add('hidden');
+      loadingSection.classList.remove('hidden');
+
+      progressFeed.style.display = 'block';
+      progressFeedContent.innerHTML = '';
+
+      eventsList.innerHTML = '';
+      eventsLoading.classList.remove('hidden');
+
+      document.getElementById('tokensList').innerHTML =
+        `<p style="text-align:center;padding:32px;color:rgba(255,255,255,0.4);">Tokens will appear here...</p>`;
+
+      incrementalEvents = [];
+      incrementalTokens = {};
+
+      chartData = { labels: [], cumulativeGains: [] };
+      cumulativeGain = 0;
+      if (performanceChart) { performanceChart.destroy(); performanceChart = null; }
+
+      progressBar.style.width = '0%';
+      calculateBtn.disabled = true;
+      updateLoadingText('Connecting to server...');
+      addProgressMessage('Connecting to server...', 'info');
+
+      try {
+        const response = await fetch('/api/calculate-taxes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress,
+            accountingMethod,
+            maxTransactions,
+            taxRegion
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || errorData.message || 'An error occurred');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const payload = JSON.parse(line.substring(6));
+                handleStreamEvent(payload);
+              } catch (err) {
+                console.error('Error parsing SSE data:', err);
+              }
+            }
+          }
+        }
+
+      } catch (err) {
+        console.error('Error:', err);
+        showError(err.message || 'An error occurred while calculating taxes');
+        addProgressMessage(err.message || 'Error', 'error');
+        loadingSection.classList.add('hidden');
+        progressFeed.style.display = 'none';
+        calculateBtn.disabled = false;
+      }
+    });
+
+    // --- Download report (TXT) ---
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      if (!currentReportData || !currentReportData.full_report_text) {
+        alert('No report data available to download');
+        return;
+      }
+      const blob = new Blob([currentReportData.full_report_text], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tax_report_${currentReportData.wallet.substring(0, 8)}_${currentReportData.accounting_method}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
+
+    // --- Export to CSV ---
+    document.getElementById('downloadCsvBtn').addEventListener('click', async () => {
+      if (!currentReportData) {
+        alert('No report data available to export');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/export-csv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reportData: currentReportData })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to export CSV');
+        }
+
+        // Download the CSV file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tax_report_${currentReportData.wallet.substring(0, 8)}_${currentReportData.accounting_method}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Failed to export CSV. Please try again.');
+        console.error('CSV export error:', err);
+      }
+    });
+
+    // --- AI Chat Assistant ---
+    const aiChatWidget = document.createElement('div');
+    aiChatWidget.id = 'aiChatWidget';
+    aiChatWidget.innerHTML = `
+      <button id="aiChatToggle" title="AI Tax Assistant">🤖</button>
+      <div id="aiChatBox">
+        <div class="chat-header">
+          <div>
+            <div style="font-weight: 800; font-size: 16px;">AI Tax Assistant</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px;">Powered by Claude</div>
+          </div>
+          <button id="closeChatBtn" style="background: transparent; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 20px;">✕</button>
+        </div>
+        <div class="suggestions-container" id="suggestionsContainer"></div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-message system">
+            Ask me anything about your taxes, optimization strategies, or what-if scenarios!
+          </div>
+        </div>
+        <div class="chat-input-container">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Ask about tax optimization..." />
+          <button id="chatSendBtn" class="chat-send-btn">Send</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(aiChatWidget);
+
+    const aiChatToggle = document.getElementById('aiChatToggle');
+    const aiChatBox = document.getElementById('aiChatBox');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+    const chatMessages = document.getElementById('chatMessages');
+    const suggestionsContainer = document.getElementById('suggestionsContainer');
+
+    let conversationHistory = [];
+    let isAIConfigured = false;
+
+    // Toggle chat
+    aiChatToggle.addEventListener('click', () => {
+      aiChatBox.classList.toggle('open');
+      if (aiChatBox.classList.contains('open')) {
+        chatInput.focus();
+        // Load suggestions when chat opens and we have data
+        if (currentReportData) {
+          loadAISuggestions();
+        }
+      }
+    });
+
+    closeChatBtn.addEventListener('click', () => {
+      aiChatBox.classList.remove('open');
+    });
+
+    // Send message
+    async function sendAIMessage(message) {
+      if (!message.trim()) return;
+
+      // Add user message to UI
+      addChatMessage(message, 'user');
+      chatInput.value = '';
+      chatSendBtn.disabled = true;
+
+      // Prepare tax data
+      const taxData = prepareTaxDataForAI();
+
+      try {
+        const response = await fetch('/api/ai-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: message,
+            taxData: taxData,
+            conversationHistory: conversationHistory
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.isConfigured === false) {
+          addChatMessage('AI Assistant is not configured. Please set ANTHROPIC_API_KEY environment variable.', 'system');
+          isAIConfigured = false;
+          return;
+        }
+
+        if (data.error) {
+          addChatMessage(`Error: ${data.error}`, 'system');
+          return;
+        }
+
+        isAIConfigured = true;
+        conversationHistory = data.conversationHistory;
+        addChatMessage(data.response, 'assistant');
+
+      } catch (err) {
+        addChatMessage('Failed to get AI response. Please try again.', 'system');
+        console.error('AI chat error:', err);
+      } finally {
+        chatSendBtn.disabled = false;
+      }
+    }
+
+    function parseMarkdown(text) {
+      // Simple markdown parser for chat messages
+      let html = text
+        // Headers
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        // Bold
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Lists
+        .replace(/^\- (.+)$/gim, '<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gim, '<li>$2</li>')
+        // Inline code
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        // Line breaks
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+
+      // Wrap lists in ul tags
+      html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+      return html;
+    }
+
+    function addChatMessage(text, role) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `chat-message ${role}`;
+
+      if (role === 'assistant') {
+        // Parse markdown for assistant messages
+        messageDiv.innerHTML = parseMarkdown(text);
+      } else {
+        messageDiv.textContent = text;
+      }
+
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function prepareTaxDataForAI() {
+      if (!currentReportData) {
+        return {
+          tax_region: 'Unknown',
+          accounting_method: 'FIFO',
+          total_pnl: 0,
+          total_tax_liability: 0,
+          total_trades: 0,
+          winning_trades: 0,
+          losing_trades: 0,
+          holdings_value: 0,
+          short_term_rate: 0.37,
+          long_term_rate: 0.20
+        };
+      }
+
+      const summary = currentReportData.summary || {};
+      const tokens = currentReportData.tokens || [];
+
+      // Calculate unrealized losses
+      let unrealizedLosses = 0;
+      tokens.forEach(token => {
+        if (token.gain < 0) {
+          unrealizedLosses += token.gain;
+        }
+      });
+
+      // Calculate short-term vs long-term gains
+      const events = currentReportData.events || [];
+      let shortTermGains = 0;
+      let longTermGains = 0;
+      events.forEach(event => {
+        if (event.term_type === 'Short-term') {
+          shortTermGains += event.gain || 0;
+        } else {
+          longTermGains += event.gain || 0;
+        }
+      });
+
+      return {
+        tax_region: currentReportData.tax_region || 'US Federal',
+        accounting_method: currentReportData.accounting_method || 'FIFO',
+        total_pnl: summary.net_gain || 0,
+        total_tax_liability: summary.total_tax_liability || 0,
+        total_proceeds: summary.total_proceeds || 0,
+        total_cost: summary.total_cost || 0,
+        total_trades: summary.taxable_sales || 0,
+        winning_trades: tokens.filter(t => t.gain > 0).length,
+        losing_trades: tokens.filter(t => t.gain < 0).length,
+        holdings_value: 0, // Would need current prices
+        unrealized_losses: unrealizedLosses,
+        short_term_gains: shortTermGains,
+        long_term_gains: longTermGains,
+        short_term_rate: currentReportData.short_term_rate || 0.37,
+        long_term_rate: currentReportData.long_term_rate || 0.20,
+        tokens: tokens.slice(0, 10), // Top 10 tokens
+        recent_events: events.slice(-20) // Last 20 events
+      };
+    }
+
+    async function loadAISuggestions() {
+      if (!currentReportData) return;
+
+      try {
+        const taxData = prepareTaxDataForAI();
+        const response = await fetch('/api/ai-suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taxData })
+        });
+
+        const data = await response.json();
+
+        if (data.suggestions && data.suggestions.length > 0) {
+          suggestionsContainer.innerHTML = '<div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 6px;">💡 Quick Actions:</div>';
+          data.suggestions.forEach(suggestion => {
+            const chip = document.createElement('span');
+            chip.className = 'suggestion-chip';
+            chip.textContent = suggestion.title;
+            chip.title = suggestion.description;
+            chip.addEventListener('click', () => {
+              sendAIMessage(`Tell me more about: ${suggestion.title}`);
+            });
+            suggestionsContainer.appendChild(chip);
+          });
+          suggestionsContainer.style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Failed to load AI suggestions:', err);
+      }
+    }
+
+    chatSendBtn.addEventListener('click', () => {
+      sendAIMessage(chatInput.value);
+    });
+
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendAIMessage(chatInput.value);
+      }
+    });
+
+    // Show AI chat button only when results are available
+    const originalDisplayResults = window.displayResults || function() {};
+    window.displayResults = function(data) {
+      originalDisplayResults(data);
+      aiChatWidget.style.display = 'block';
+    };
+  </script>
+</body>
+</html>
