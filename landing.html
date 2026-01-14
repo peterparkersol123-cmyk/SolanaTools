@@ -227,7 +227,32 @@
         .btn-primary:hover::before {
             left: 100%;
         }
-        
+
+        /* Secondary Button */
+        .btn-secondary {
+            display: inline-block;
+            padding: 18px 48px;
+            background: transparent;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            border: 2px solid rgba(167, 139, 250, 0.5);
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.15);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            background: rgba(167, 139, 250, 0.1);
+            border-color: #a78bfa;
+            box-shadow: 0 15px 50px rgba(139, 92, 246, 0.3);
+        }
+
         /* Feature List */
         .feature-item {
             padding: 16px 0;
@@ -374,7 +399,10 @@
                 <p class="hero-subtitle">
                     Professional analytics for Solana traders. Calculate taxes, analyze performance, and optimize your strategy with powerful tools.
                 </p>
-                <a href="#apps" class="btn-primary">Explore Tools</a>
+                <div style="display: flex; gap: 16px; justify-content: center; align-items: center;">
+                    <a href="#apps" class="btn-primary">Explore Tools</a>
+                    <a href="#" id="buyButton" class="btn-secondary">BUY</a>
+                </div>
             </div>
             
             <div class="scroll-indicator">
