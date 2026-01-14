@@ -16,7 +16,12 @@ from enum import Enum
 
 LAMPORTS_PER_SOL = 1_000_000_000
 MAX_TRANSACTIONS = 10000
-API_RATE_LIMIT_DELAY = 0.3
+# Helius API rate limits:
+# Free tier: 10 req/sec (0.1s delay)
+# Paid tier: 50 req/sec (0.02s delay = 20ms)
+# Using 0.02s for paid tier - adjust if you're on free tier
+API_RATE_LIMIT_DELAY = 0.02  # 50 requests/second (paid tier)
+# API_RATE_LIMIT_DELAY = 0.1  # 10 requests/second (free tier)
 COINGECKO_DELAY = 0.02
 DEXSCREENER_DELAY = 0.05
 FLOAT_EPSILON = 0.0001
@@ -238,6 +243,10 @@ class SolanaMemecoinTaxCalculator:
         return parsed_swaps
     
     async def _fetch_transactions_async(self, tx_queue: asyncio.Queue, fetch_complete: asyncio.Event, progress_callback=None):
+        """
+        Fetch transactions with optimized rate limiting for paid Helius tier (50 req/sec).
+        Reduced delay from 0.3s to 0.02s to utilize full 50 req/sec capacity.
+        """
         async with aiohttp.ClientSession() as session:
             before_signature = None
             page = 0
@@ -281,8 +290,9 @@ class SolanaMemecoinTaxCalculator:
                             break
                             
                         before_signature = data[-1].get('signature')
+                        # Reduced delay for paid tier (50 req/sec = 0.02s between requests)
                         await asyncio.sleep(API_RATE_LIMIT_DELAY)
-                        
+                
                 except Exception as e:
                     print(f"Error fetching transactions: {e}")
                     break

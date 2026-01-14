@@ -19,7 +19,10 @@ import os
 # CONSTANTS
 LAMPORTS_PER_SOL = 1_000_000_000
 MAX_TRANSACTIONS = 1000
-API_RATE_LIMIT_DELAY = 0.3
+# Helius API rate limits:
+# Free tier: 10 req/sec (0.1s delay)
+# Paid tier: 50 req/sec (0.02s delay)
+API_RATE_LIMIT_DELAY = 0.02  # Updated for paid tier (50 req/sec)
 COINGECKO_DELAY = 0.1
 FLOAT_EPSILON = 0.0001
 DEFAULT_SOL_PRICE_USD = 150.0
