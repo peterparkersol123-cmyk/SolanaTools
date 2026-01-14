@@ -109,23 +109,63 @@
     }
 
     #aiChatToggle {
-      width: 64px;
-      height: 64px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       background: linear-gradient(135deg, #a78bfa, #8b5cf6);
-      border: none;
+      border: 3px solid rgba(255, 255, 255, 0.2);
       cursor: pointer;
-      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+      box-shadow: 0 12px 48px rgba(139, 92, 246, 0.6);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: 32px;
       transition: all 0.3s ease;
+      animation: pulse-glow 2s ease-in-out infinite;
+      position: relative;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 12px 48px rgba(139, 92, 246, 0.6), 0 0 0 0 rgba(167, 139, 250, 0.7);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 12px 48px rgba(139, 92, 246, 0.8), 0 0 0 15px rgba(167, 139, 250, 0);
+        transform: scale(1.05);
+      }
     }
 
     #aiChatToggle:hover {
-      transform: scale(1.1);
-      box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+      transform: scale(1.15);
+      box-shadow: 0 16px 56px rgba(139, 92, 246, 0.8);
+      animation: none;
+    }
+
+    #aiChatToggle::before {
+      content: 'AI Tax Help';
+      position: absolute;
+      right: 85px;
+      background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+      animation: slide-bounce 3s ease-in-out infinite;
+    }
+
+    @keyframes slide-bounce {
+      0%, 100% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      50% {
+        transform: translateX(-5px);
+        opacity: 0.9;
+      }
     }
 
     #aiChatBox {
