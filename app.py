@@ -164,11 +164,11 @@ def calculate_taxes():
                         update_type = update.get('type')
                         
                         if update_type == 'status':
-                            yield f"data: {json.dumps({'type': 'status', 'message': update['message']})}\n\n"
+                            yield "data: " + json.dumps({'type': 'status', 'message': update['message']}) + "\n\n"
                         elif update_type == 'fetch_progress':
-                            yield f"data: {json.dumps({'type': 'fetch_progress', 'message': update['message'], 'data': update.get('data', {})})}\n\n"
+                            yield "data: " + json.dumps({'type': 'fetch_progress', 'message': update['message'], 'data': update.get('data', {})}) + "\n\n"
                         elif update_type == 'progress':
-                            yield f"data: {json.dumps({'type': 'progress', 'message': update['message'], 'data': update.get('data', {})})}\n\n"
+                            yield "data: " + json.dumps({'type': 'progress', 'message': update['message'], 'data': update.get('data', {})}) + "\n\n"
                         elif update_type == 'event':
                             # Send new taxable event
                             event_data = update.get('data', {}).get('event')
@@ -184,10 +184,10 @@ def calculate_taxes():
                                     
                                     # Get token metadata from the update (provided by main.py)
                                     token_metadata = update.get('data', {}).get('token_metadata')
-                                    
+
                                     # Send token update if we have metadata
                                     if token_metadata:
-                                        yield f"data: {json.dumps({
+                                        token_update_data = {
                                             'type': 'token_update',
                                             'token': {
                                                 'symbol': token_metadata.get('symbol', event_data.get('token', '')),
@@ -196,11 +196,12 @@ def calculate_taxes():
                                                 'mint': token_mint,
                                                 'gain': round(gains_by_mint[token_mint], 2)
                                             }
-                                        })}\n\n"
+                                        }
+                                        yield "data: " + json.dumps(token_update_data) + "\n\n"
                                     else:
                                         # If no metadata yet, still send update with basic info
                                         # Metadata will be fetched and updated later
-                                        yield f"data: {json.dumps({
+                                        token_update_data = {
                                             'type': 'token_update',
                                             'token': {
                                                 'symbol': event_data.get('token', ''),
@@ -209,14 +210,15 @@ def calculate_taxes():
                                                 'mint': token_mint,
                                                 'gain': round(gains_by_mint[token_mint], 2)
                                             }
-                                        })}\n\n"
+                                        }
+                                        yield "data: " + json.dumps(token_update_data) + "\n\n"
                                 
                                 # Send partial summary update
                                 total_gains = sum(e['gain'] for e in incremental_events)
                                 total_proceeds = sum(e['proceeds'] for e in incremental_events)
                                 total_cost = sum(e['cost'] for e in incremental_events)
                                 
-                                yield f"data: {json.dumps({
+                                event_update_data = {
                                     'type': 'event',
                                     'event': event_data,
                                     'partial_summary': {
@@ -225,27 +227,29 @@ def calculate_taxes():
                                         'net_gain': round(total_gains, 2),
                                         'taxable_sales': len(incremental_events)
                                     }
-                                })}\n\n"
+                                }
+                                yield "data: " + json.dumps(event_update_data) + "\n\n"
                         elif update_type == 'error':
-                            yield f"data: {json.dumps({'type': 'error', 'message': update['message']})}\n\n"
+                            yield "data: " + json.dumps({'type': 'error', 'message': update['message']}) + "\n\n"
                         elif update_type == 'complete':
                             # Generate final report message
-                            yield f"data: {json.dumps({'type': 'status', 'message': 'Generating final report...'})}\n\n"
-                            yield f"data: {json.dumps({'type': 'complete', 'report': update['report']})}\n\n"
+                            yield "data: " + json.dumps({'type': 'status', 'message': 'Generating final report...'}) + "\n\n"
+                            yield "data: " + json.dumps({'type': 'complete', 'report': update['report']}) + "\n\n"
                             break
                             
                     except Exception as e:
-                        yield f"data: {json.dumps({'type': 'error', 'message': f'Error processing update: {str(e)}'})}\n\n"
-                
+                        error_msg = "Error processing update: " + str(e)
+                        yield "data: " + json.dumps({'type': 'error', 'message': error_msg}) + "\n\n"
+
                 # Check if there was an error in calculation
                 if calculation_error[0]:
-                    yield f"data: {json.dumps({'type': 'error', 'message': str(calculation_error[0])})}\n\n"
-                
+                    yield "data: " + json.dumps({'type': 'error', 'message': str(calculation_error[0])}) + "\n\n"
+
             except Exception as e:
                 import traceback
                 error_details = traceback.format_exc()
                 logger.error(f"Error calculating taxes: {error_details}")
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+                yield "data: " + json.dumps({'type': 'error', 'message': str(e)}) + "\n\n"
         
         # Return streaming response with SSE headers
         return Response(
