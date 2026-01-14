@@ -593,7 +593,7 @@ if __name__ == '__main__':
     # Run Flask app
     # Use port 5001 by default to avoid conflict with macOS AirPlay (port 5000)
     port = int(os.environ.get('PORT', 5001))
-    logger.info(f"🚀 Starting Terminal Tools server on http://localhost:{port}")
+    logger.info(f"🚀 Starting Taxify server on http://localhost:{port}")
     logger.info(f"📍 Landing page: http://localhost:{port}/")
     logger.info(f"💰 Tax Calculator: http://localhost:{port}/tax-calculator")
     logger.info(f"🔍 Wallet Analyzer: http://localhost:{port}/wallet-analyzer")
